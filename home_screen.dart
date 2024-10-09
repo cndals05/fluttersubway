@@ -10,7 +10,7 @@ import 'dart:async';
 import 'package:xml/xml.dart' as xml;
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:math' show pi;
-fffff
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   MobileAds.instance.initialize();
@@ -789,7 +789,7 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
       isLoading = true;
     });
 
-    String apiKey = '';
+    String apiKey = ''; //실제사용이 가능한 공공데이터 api키를 입력해주세요 
     String formattedLineNum = widget.lineNum.replaceFirst(RegExp(r'^0'), '');
     String url = 'http://swopenAPI.seoul.go.kr/api/subway/$apiKey/xml/realtimePosition/0/100/$formattedLineNum';
 
