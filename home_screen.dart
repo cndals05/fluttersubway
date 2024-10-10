@@ -791,7 +791,7 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
       isLoading = true;
     });
 
-    String apiKey = '66614b6f41636e643530506a755858'; //실제사용이 가능한 공공데이터 api키를 입력해주세요
+    String apiKey = ''; //실제사용이 가능한 공공데이터 api키를 입력해주세요
     String formattedLineNum = widget.lineNum.replaceFirst(RegExp(r'^0'), '');
     String url = 'http://swopenAPI.seoul.go.kr/api/subway/$apiKey/xml/realtimePosition/0/100/$formattedLineNum';
 
