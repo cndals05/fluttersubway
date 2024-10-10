@@ -370,7 +370,7 @@ class _CombinedScreenState extends State<CombinedScreen> {
 
   void addToFavorites(String stationName, String lineNum, int? index) {
     setState(() {
-      if (favoriteStations.length < 4) {
+      if (favoriteStations.length < 8) {
         final newFavorite = {
           'stationName': stationName,
           'lineNum': lineNum,
@@ -383,7 +383,7 @@ class _CombinedScreenState extends State<CombinedScreen> {
         saveFavoriteStations();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('즐겨찾기는 최대 4개까지만 가능합니다.')),
+          SnackBar(content: Text('즐겨찾기는 최대 8개까지만 가능합니다.')),
         );
       }
     });
@@ -479,7 +479,7 @@ class _CombinedScreenState extends State<CombinedScreen> {
                 );
               },
             ),
-            /* ListTile(
+             ListTile(
               leading: Icon(Icons.add_card),
               title: Text('구독'),
               onTap: () {
@@ -492,7 +492,7 @@ class _CombinedScreenState extends State<CombinedScreen> {
                   ),
                 );
               },
-            ),*/
+            ),
           ],
         ),
       ),
@@ -539,7 +539,7 @@ class _CombinedScreenState extends State<CombinedScreen> {
                   ),
                 ),
                 Container(
-                  height: 100,
+                  height: 120,
                   margin: EdgeInsets.all(8.0),
                   decoration: BoxDecoration(
                     color: Colors.blueGrey,
@@ -548,8 +548,11 @@ class _CombinedScreenState extends State<CombinedScreen> {
                   child: GridView.builder(
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 4,
+                      childAspectRatio: 1,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
                     ),
-                    padding: EdgeInsets.all(8),
+                    padding: EdgeInsets.all(10),
                     itemCount: favoriteStations.length + 1,
                     itemBuilder: (context, index) {
                       if (index < favoriteStations.length) {
@@ -557,7 +560,6 @@ class _CombinedScreenState extends State<CombinedScreen> {
                         final lineColor = _getLineColor(station['lineNum']);
                         return GestureDetector(
                           onTap: () {
-                            // 즐겨찾기 선택 시 최근 기록에 추가하고 역 정보 화면으로 이동
                             addSearchHistory(station['stationName'], station['lineNum']);
                             Navigator.push(
                               context,
@@ -582,13 +584,13 @@ class _CombinedScreenState extends State<CombinedScreen> {
                                 Text(
                                   station['stationName'],
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
                                 ),
                                 SizedBox(height: 4),
                                 Text(
                                   station['lineNum'],
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(color: Colors.white, fontSize: 12),
+                                  style: TextStyle(color: Colors.white, fontSize: 10),
                                 ),
                               ],
                             ),
@@ -602,10 +604,10 @@ class _CombinedScreenState extends State<CombinedScreen> {
                           child: Container(
                             decoration: BoxDecoration(
                               color: Colors.grey,
-                              borderRadius: BorderRadius.circular(10.0),
+                              borderRadius: BorderRadius.circular(10),
                             ),
                             child: Icon(
-                              Icons.add_box_rounded,
+                              Icons.add_box,
                               color: Colors.white,
                               size: 30,
                             ),
@@ -789,7 +791,7 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
       isLoading = true;
     });
 
-    String apiKey = ''; //실제사용이 가능한 공공데이터 api키를 입력해주세요 
+    String apiKey = '66614b6f41636e643530506a755858'; //실제사용이 가능한 공공데이터 api키를 입력해주세요
     String formattedLineNum = widget.lineNum.replaceFirst(RegExp(r'^0'), '');
     String url = 'http://swopenAPI.seoul.go.kr/api/subway/$apiKey/xml/realtimePosition/0/100/$formattedLineNum';
 
@@ -1067,100 +1069,75 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
 
 
   Widget _buildSelectedTrainInfo() {
-    return Card(
-      margin: EdgeInsets.all(16),
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final double maxWidth = constraints.maxWidth;
+        final double fontSize = maxWidth < 600 ? 16 : 18;
+        final double iconSize = maxWidth < 600 ? 20 : 24;
+        final double padding = maxWidth < 600 ? 12 : 16;
+
+        return Card(
+          margin: EdgeInsets.all(padding),
+          elevation: 4,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: Padding(
+            padding: EdgeInsets.all(padding),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  '열차 정보',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.blue[700]),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '열차 정보',
+                      style: TextStyle(fontSize: fontSize + 4, fontWeight: FontWeight.bold, color: Colors.blue[700]),
+                    ),
+                    Icon(Icons.train, color: Colors.blue[700], size: iconSize + 4),
+                  ],
                 ),
-                Icon(Icons.train, color: Colors.blue[700], size: 28),
+                Divider(thickness: 1.5, height: padding * 1.5),
+                if (selectedTrain == null)
+                  Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(padding),
+                      child: Text(
+                        '열차를 선택해주세요.',
+                        style: TextStyle(fontSize: fontSize, color: Colors.grey[600]),
+                      ),
+                    ),
+                  )
+                else
+                  Column(
+                    children: [
+                      _buildInfoRow(Icons.confirmation_number, '열차 번호', selectedTrain!['trainNo'] ?? '정보 없음', fontSize, iconSize),
+                      _buildInfoRow(Icons.location_on, '현재 위치', selectedTrain!['statnNm'] ?? '정보 없음', fontSize, iconSize),
+                      _buildInfoRow(Icons.flash_on, '급행 여부', _getExpressStatus(selectedTrain!['directAt']), fontSize, iconSize),
+                      _buildInfoRow(Icons.last_page, '막차 여부', selectedTrain!['lstcarAt'] == '1' ? '막차' : '아님', fontSize, iconSize),
+                      _buildInfoRow(Icons.info_outline, '상태', _getTrainStatus(selectedTrain!['trainSttus']), fontSize, iconSize),
+                      _buildInfoRow(Icons.flag, '종착역', selectedTrain!['statnTnm'] ?? '정보 없음', fontSize, iconSize),
+                      SizedBox(height: padding),
+                      _buildNotificationSection(fontSize, iconSize, padding),
+                    ],
+                  ),
               ],
             ),
-            Divider(thickness: 1.5, height: 24),
-            if (selectedTrain == null)
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Text(
-                    '열차를 선택해주세요.',
-                    style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-                  ),
-                ),
-              )
-            else
-              Column(
-                children: [
-                  _buildInfoRow(Icons.confirmation_number, '열차 번호', selectedTrain!['trainNo'] ?? '정보 없음'),
-                  _buildInfoRow(Icons.location_on, '현재 위치', selectedTrain!['statnNm'] ?? '정보 없음'),
-                  _buildInfoRow(Icons.flash_on, '급행 여부', _getExpressStatus(selectedTrain!['directAt'])),
-                  _buildInfoRow(Icons.last_page, '막차 여부', selectedTrain!['lstcarAt'] == '1' ? '막차' : '아님'),
-                  _buildInfoRow(Icons.info_outline, '상태', _getTrainStatus(selectedTrain!['trainSttus'])),
-                  _buildInfoRow(Icons.flag, '종착역', selectedTrain!['statnTnm'] ?? '정보 없음'),
-                  if (showNotification)
-                    Container(
-                      padding: EdgeInsets.all(8),
-                      margin: EdgeInsets.only(bottom: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.blue[100],
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.blue[500]!, width: 2),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.notifications_active, color: Colors.blue[700]),
-                          SizedBox(width: 8),
-                          Text(
-                            '역을 선택하시면 됨니다!',
-                            style: TextStyle(color: Colors.blue[700], fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ElevatedButton(
-                    onPressed: handleNotificationClick,
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: Size(double.infinity, 50),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      backgroundColor: Colors.deepPurple,
-                    ),
-                    child: Text(
-                      '알림',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
-  Widget _buildInfoRow(IconData icon, String label, String value) {
+
+  Widget _buildInfoRow(IconData icon, String label, String value, double fontSize, double iconSize) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: Colors.blue[600]),
-          SizedBox(width: 12),
+          Icon(icon, size: iconSize, color: Colors.blue[600]),
+          SizedBox(width: 8),
           Expanded(
             child: RichText(
               text: TextSpan(
-                style: TextStyle(fontSize: 16, color: Colors.black87),
+                style: TextStyle(fontSize: fontSize, color: Colors.black87),
                 children: [
                   TextSpan(text: '$label: ', style: TextStyle(fontWeight: FontWeight.bold)),
                   TextSpan(text: value),
@@ -1170,6 +1147,52 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildNotificationSection(double fontSize, double iconSize, double padding) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (showNotification)
+          Container(
+            padding: EdgeInsets.all(padding),
+            margin: EdgeInsets.only(bottom: padding),
+            decoration: BoxDecoration(
+              color: Colors.blue[50],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue[300]!, width: 1),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.notifications_active, color: Colors.blue[700], size: iconSize),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '알림이 설정되었습니다. 열차가 도착하면 알려드리겠습니다.',
+                    style: TextStyle(color: Colors.blue[700], fontWeight: FontWeight.bold, fontSize: fontSize - 2),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ElevatedButton.icon(
+          onPressed: handleNotificationClick,
+          icon: Icon(showNotification ? Icons.notifications_off : Icons.notifications_active, size: iconSize),
+          label: Text(
+            showNotification ? '알림 해제' : '알림 설정',
+            style: TextStyle(fontSize: fontSize),
+          ),
+          style: ElevatedButton.styleFrom(
+            minimumSize: Size(double.infinity, 50),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            backgroundColor: showNotification ? Colors.grey[600] : Colors.blue[700],
+            padding: EdgeInsets.symmetric(vertical: padding),
+          ),
+        ),
+      ],
     );
   }
 
@@ -1208,8 +1231,6 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
       ),
     );
   }
-
-
 }
 
 
@@ -1379,38 +1400,65 @@ class SettingsScreens extends StatelessWidget {
       appBar: AppBar(
         title: Text('구독'),
       ),
-      body: Center(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _buildSubscriptionOption(
-              context: context,
-              title: '1달 이용권',
-              price: '      ₩900\n알림설정가능',
-              color: Colors.blue.shade400,
-              onTap: () => _showSubscriptionDialog(context, '1달 이용권'),
-            ),
-            SizedBox(width: 16),
-            _buildSubscriptionOption(
-              context: context,
-              title: '1년 이용권',
-              price: '    ₩9,900\n알림설정가능',
-              color: Colors.green.shade400,
-              onTap: () => _showSubscriptionDialog(context, '1년 이용권'),
-              isBestValue: true,
-            ),
-            SizedBox(width: 16),
-            _buildSubscriptionOption(
-              context: context,
-              title: '평생 이용권',
-              price: '  ₩15,000\n알림설정가능',
-              color: Colors.purple.shade400,
-              onTap: () => _showSubscriptionDialog(context, '평생 이용권'),
-            ),
-          ],
-        ),
+      body: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          if (constraints.maxWidth > 600) {
+            // 큰 화면에서는 가로로 배치
+            return Center(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: _buildSubscriptionOptions(context, isHorizontal: true),
+              ),
+            );
+          } else {
+            // 작은 화면에서는 세로로 배치
+            return SingleChildScrollView(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: _buildSubscriptionOptions(context, isHorizontal: false),
+                ),
+              ),
+            );
+          }
+        },
       ),
     );
+  }
+
+  List<Widget> _buildSubscriptionOptions(BuildContext context, {required bool isHorizontal}) {
+    final double spacing = isHorizontal ? 16 : 24;
+    final double optionWidth = isHorizontal ? 115 : MediaQuery.of(context).size.width * 0.8;
+
+    return [
+      _buildSubscriptionOption(
+        context: context,
+        title: '1달 이용권',
+        price: '₩900\n알림설정가능',
+        color: Colors.blue.shade400,
+        onTap: () => _showSubscriptionDialog(context, '1달 이용권'),
+        width: optionWidth,
+      ),
+      SizedBox(width: isHorizontal ? spacing : 0, height: isHorizontal ? 0 : spacing),
+      _buildSubscriptionOption(
+        context: context,
+        title: '1년 이용권',
+        price: '₩9,900\n알림설정가능',
+        color: Colors.green.shade400,
+        onTap: () => _showSubscriptionDialog(context, '1년 이용권'),
+        isBestValue: true,
+        width: optionWidth,
+      ),
+      SizedBox(width: isHorizontal ? spacing : 0, height: isHorizontal ? 0 : spacing),
+      _buildSubscriptionOption(
+        context: context,
+        title: '평생 이용권',
+        price: '₩15,000\n알림설정가능',
+        color: Colors.purple.shade400,
+        onTap: () => _showSubscriptionDialog(context, '평생 이용권'),
+        width: optionWidth,
+      ),
+    ];
   }
 
   Widget _buildSubscriptionOption({
@@ -1420,59 +1468,56 @@ class SettingsScreens extends StatelessWidget {
     required Color color,
     required VoidCallback onTap,
     bool isBestValue = false,
+    required double width,
   }) {
-
-    return Stack(
-      children: [
-        Container(
-          width: 115,
-          height: 200,
-          child: Card(
-            elevation: 5,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(15),
-            ),
-            color: color,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Container(
+      width: width,
+      height: 200,
+      child: Card(
+        elevation: 5,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+        ),
+        color: color,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
                 children: [
-                  Column(
-                    children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      SizedBox(height: 16),
-                      Text(
-                        price,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
-                  ElevatedButton(
-                    onPressed: onTap,
-                    child: Text('구매'),
-                    style: ElevatedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
                     ),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    price,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
                 ],
               ),
-            ),
+              ElevatedButton(
+                onPressed: onTap,
+                child: Text('구매'),
+                style: ElevatedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                ),
+              ),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 
