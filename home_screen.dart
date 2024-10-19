@@ -51,7 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _createBannerAd() {
     _bannerAd = BannerAd(
-      adUnitId: 'ca-app-pub-2533926979702289/9989724678',
+      adUnitId: 'ca-app-pub-3940256099942544~3347511713', /*ca-app-pub-2533926979702289/9989724678*/
       size: AdSize.banner,
       request: AdRequest(),
       listener: BannerAdListener(
@@ -74,16 +74,38 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return MaterialApp(
       theme: ThemeData(
-        scaffoldBackgroundColor: Color(0xFFF5F5F5), // 밝은 회색
-        // 다크 모드일 때의 색상
-        brightness: _isDarkMode ? Brightness.dark : Brightness.light,
-        // 기존의 다른 테마 설정들...
+        brightness: Brightness.light,
+        primaryColor: Colors.blue,
+        scaffoldBackgroundColor: Color(0xFFF5F5F5),
+        appBarTheme: AppBarTheme(
+          backgroundColor: Colors.blue,
+          foregroundColor: Colors.black,
+        ),
+        // 기타 라이트 모드 설정...
       ),
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+        primaryColor: Colors.blueGrey,
+        scaffoldBackgroundColor: Color(0xff242323),  // 요청한 다크 모드 배경색
+        appBarTheme: AppBarTheme(
+          backgroundColor: Colors.blueGrey,
+          foregroundColor: Colors.white,
+        ),
+        textTheme: TextTheme(
+          bodyLarge: TextStyle(color: Colors.white),
+          bodyMedium: TextStyle(color: Colors.white),
+        ),
+        // 기타 다크 모드 설정...
+      ),
+      themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
       home: Scaffold(
         body: Column(
           children: [
             Expanded(
-              child: CombinedScreen(toggleDarkMode: _toggleDarkMode, isDarkMode: _isDarkMode),
+              child: CombinedScreen(
+                  toggleDarkMode: _toggleDarkMode,
+                  isDarkMode: _isDarkMode
+              ),
             ),
             if (_isAdLoaded)
               Container(
@@ -126,6 +148,8 @@ class _CombinedScreenState extends State<CombinedScreen> {
 
   Widget _buildFavoriteStationItem(Map<String, dynamic> station, int index) {
     final lineColor = _getLineColor(station['lineNum']);
+    final displayLineNum = station['lineNum'].replaceFirst(RegExp(r'^0'), '');
+
     return InkWell(
       onTap: () {
         addSearchHistory(station['stationName'], station['lineNum']);
@@ -135,7 +159,9 @@ class _CombinedScreenState extends State<CombinedScreen> {
             builder: (context) => StationInfoScreen(
               stationName: station['stationName'],
               lineNum: station['lineNum'],
-              stations: allStations.where((s) => s['line_num'] == station['lineNum']).toList(),
+              stations: allStations
+                  .where((s) => s['line_num'] == station['lineNum'])
+                  .toList(),
             ),
           ),
         );
@@ -171,16 +197,25 @@ class _CombinedScreenState extends State<CombinedScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      station['stationName'],
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                      textAlign: TextAlign.center,
-                      overflow: TextOverflow.ellipsis,
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        station['stationName'],
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                     SizedBox(height: 1),
                     Text(
-                      station['lineNum'],
-                      style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                      displayLineNum,  // 여기서 수정된 호선 번호를 사용합니다
+                      style: TextStyle(
+                        color: Colors.black87,
+                        fontSize: 11,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -195,7 +230,8 @@ class _CombinedScreenState extends State<CombinedScreen> {
 
   Widget _buildAddFavoriteButton() {
     return InkWell(
-      onTap: () => _showSearchBottomSheet(forFavorites: true, favoriteIndex: favoriteStations.length),
+      onTap: () => _showSearchBottomSheet(
+          forFavorites: true, favoriteIndex: favoriteStations.length),
       child: Container(
         width: 80,
         height: 68,
@@ -239,7 +275,6 @@ class _CombinedScreenState extends State<CombinedScreen> {
     );
   }
 
-
   @override
   void initState() {
     super.initState();
@@ -255,13 +290,15 @@ class _CombinedScreenState extends State<CombinedScreen> {
     });
 
     try {
-      String jsonString = await rootBundle.loadString('assets/seoul_subway.json');
+      String jsonString =
+      await rootBundle.loadString('assets/seoul_subway.json');
       final jsonResponse = json.decode(jsonString);
 
       if (jsonResponse['DATA'] != null) {
         setState(() {
           allStations = jsonResponse['DATA'];
-          allStations.sort((a, b) => a['station_cd'].compareTo(b['station_cd']));
+          allStations
+              .sort((a, b) => a['station_cd'].compareTo(b['station_cd']));
           isLoading = false;
         });
       } else {
@@ -306,23 +343,23 @@ class _CombinedScreenState extends State<CombinedScreen> {
 
   Future<void> loadFavoriteStations() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    List<String>? favStations = prefs.getStringList('favoriteStations');
-    if (favStations != null) {
+    String? favStationsJson = prefs.getString('favoriteStations');
+    if (favStationsJson != null) {
+      List<dynamic> decodedList = json.decode(favStationsJson);
       setState(() {
-        favoriteStations = favStations.map((item) {
-          final parts = item.split('|');
-          return {
-            'stationName': parts[0],
-            'lineNum': parts[1],
-          };
-        }).toList();
+        favoriteStations = decodedList.map((item) =>
+        Map<String, dynamic>.from(item)
+        ).toList();
       });
     }
   }
 
+
   void saveSearchHistory() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    final history = searchHistory.map((item) => '${item['stationName']}|${item['lineNum']}').toList();
+    final history = searchHistory
+        .map((item) => '${item['stationName']}|${item['lineNum']}')
+        .toList();
     await prefs.setStringList('searchHistory', history);
   }
 
@@ -331,10 +368,10 @@ class _CombinedScreenState extends State<CombinedScreen> {
     await prefs.setStringList('favorites', favorites.toList());
   }
 
-  void saveFavoriteStations() async {
+  Future<void> saveFavoriteStations() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    final favStations = favoriteStations.map((item) => '${item['stationName']}|${item['lineNum']}').toList();
-    await prefs.setStringList('favoriteStations', favStations);
+    String favStationsJson = json.encode(favoriteStations);
+    await prefs.setString('favoriteStations', favStationsJson);
   }
 
   void addSearchHistory(String stationName, String lineNum) {
@@ -344,7 +381,8 @@ class _CombinedScreenState extends State<CombinedScreen> {
     };
 
     setState(() {
-      searchHistory.removeWhere((item) => item['stationName'] == stationName && item['lineNum'] == lineNum);
+      searchHistory.removeWhere((item) =>
+      item['stationName'] == stationName && item['lineNum'] == lineNum);
       searchHistory.insert(0, entry);
       if (searchHistory.length > 10) {
         searchHistory.removeLast();
@@ -378,8 +416,25 @@ class _CombinedScreenState extends State<CombinedScreen> {
       filteredStations = allStations.where((station) {
         final stationName = station['station_nm'].toLowerCase();
         final lineNum = station['line_num'].toLowerCase();
-        return stationName.contains(lowerCaseQuery) || lineNum.contains(lowerCaseQuery);
+        return stationName.contains(lowerCaseQuery) ||
+            lineNum.contains(lowerCaseQuery);
       }).toList();
+    });
+  }
+
+  void addToFavorites(String stationName, String lineNum) {
+    setState(() {
+      if (favoriteStations.length < 4) {
+        favoriteStations.add({
+          'stationName': stationName,
+          'lineNum': lineNum,
+        });
+        saveFavoriteStations();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('즐겨찾기는 최대 4개까지만 추가할 수 있습니다.')),
+        );
+      }
     });
   }
 
@@ -392,75 +447,31 @@ class _CombinedScreenState extends State<CombinedScreen> {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setModalState) {
             return Container(
-              height: MediaQuery.of(context).size.height * 0.97,
+              height: MediaQuery.of(context).size.height * 0.9,
               decoration: BoxDecoration(
-                color: Colors.white ,
+                color: Colors.white,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
               ),
               child: Column(
                 children: [
                   Container(
                     padding: EdgeInsets.fromLTRB(16, 20, 16, 10),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12.0),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.grey.withOpacity(0.5),
-                                  spreadRadius: -10,
-                                  blurRadius: 4,
-                                  offset: Offset(3, 10),
-                                ),
-                              ],
-                            ),
-                            child: TextField(
-                              controller: _searchController,
-                              onChanged: (query) {
-                                setModalState(() {
-                                  searchStations(query);
-                                });
-                              },
-                              autofocus: true,
-                              decoration: InputDecoration(
-                                labelText: '역 검색',
-                                suffixIcon: Icon(Icons.search, color: Colors.blueGrey),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12.0),
-                                  borderSide: BorderSide(
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12.0),
-                                  borderSide: BorderSide(
-                                    color: Colors.grey.withOpacity(0.3),
-                                    width: 1.0,
-                                  ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12.0),
-                                  borderSide: BorderSide(
-                                    color: Colors.grey,
-                                    width: 1.0,
-                                  ),
-                                ),
-                                filled: true,
-                                fillColor: Colors.white,
-                              ),
-                            ),
-                          ),
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: (query) {
+                        setModalState(() {
+                          searchStations(query);
+                        });
+                      },
+                      style: TextStyle(color: Colors.black), // Set input text color to black
+                      decoration: InputDecoration(
+                        labelText: '역 검색',
+                        labelStyle: TextStyle(color: Colors.black),
+                        suffixIcon: Icon(
+                          Icons.search,
+                          color: Colors.black,
                         ),
-                        SizedBox(width: 10),
-                        IconButton(
-                          icon: Icon(Icons.close),
-                          onPressed: () {
-                            Navigator.pop(context);
-                          },
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                   Expanded(
@@ -471,32 +482,31 @@ class _CombinedScreenState extends State<CombinedScreen> {
                         final stationName = station['station_nm'];
                         final lineNum = station['line_num'];
 
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
-                          child: Card(
-                            elevation: 0,
-                            color: Colors.transparent,
-                            child: ListTile(
-                              title: Text('$stationName - $lineNum'),
-                              onTap: () {
-                                if (forFavorites) {
-                                  Navigator.pop(context);
-                                } else {
-                                  addSearchHistory(stationName, lineNum);
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => StationInfoScreen(
-                                        stationName: stationName,
-                                        lineNum: lineNum,
-                                        stations: allStations.where((s) => s['line_num'] == lineNum).toList(),
-                                      ),
-                                    ),
-                                  );
-                                }
-                              },
-                            ),
+                        return ListTile(
+                          title: Text(
+                            '$stationName - $lineNum',
+                            style: TextStyle(color: Colors.black), // Keep the color black
                           ),
+                          onTap: () {
+                            if (forFavorites) {
+                              addToFavorites(stationName, lineNum);
+                              Navigator.pop(context);
+                            } else {
+                              addSearchHistory(stationName, lineNum);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => StationInfoScreen(
+                                    stationName: stationName,
+                                    lineNum: lineNum,
+                                    stations: allStations
+                                        .where((s) => s['line_num'] == lineNum)
+                                        .toList(),
+                                  ),
+                                ),
+                              );
+                            }
+                          },
                         );
                       },
                     ),
@@ -509,6 +519,7 @@ class _CombinedScreenState extends State<CombinedScreen> {
       },
     );
   }
+
 
   void removeFromFavorites(int index) {
     setState(() {
@@ -533,7 +544,7 @@ class _CombinedScreenState extends State<CombinedScreen> {
       '경춘선': Color(0xFF359697),
       '수인분당선': Color(0xFFEAB036),
       'GTX-A': Color(0xFF986293),
-      '공항철도':Color(0xFF5094FF),
+      '공항철도': Color(0xFF5094FF),
     };
     return lineColors[lineNum] ?? Colors.grey;
   }
@@ -554,12 +565,12 @@ class _CombinedScreenState extends State<CombinedScreen> {
             ),
             Text(
               '열차위치',
-              style: TextStyle(fontSize: 19),
-            ),
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 19,fontWeight: FontWeight.bold),
+            )
           ],
         ),
         centerTitle: true,
-        backgroundColor:  Colors.transparent,
+        backgroundColor: Colors.transparent,
       ),
       endDrawer: Drawer(
         child: ListView(
@@ -633,191 +644,219 @@ class _CombinedScreenState extends State<CombinedScreen> {
                   ),
                 ],
               ),
-              child: TextField(
-                controller: _searchController,
-                enabled: false,
-                decoration: InputDecoration(
-                  labelText: '역 검색',
-                  suffixIcon: Icon(Icons.search, color: Colors.blueGrey),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.0),
-                    borderSide: BorderSide(
-                      color: Colors.red,
-                      width: 2.0,
-                    ),
-                  ),
-                  disabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.0),
-                    borderSide: BorderSide(
-                      color: Colors.grey.withOpacity(0.3),
-                      width: 1.0,
-                    ),
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                ),
-              ),
+                child: Builder(
+                  builder: (BuildContext context) {
+                    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+                    final Color backgroundColor = isDarkMode ? Colors.grey[800]! : Colors.white;
+                    final Color textColor = isDarkMode ? Colors.white : Colors.black;
+                    final Color borderColor = isDarkMode ? Color(0xFF4B4B4B) : Color(0xFF5D5D5D);
+
+                    return TextField(
+                      controller: _searchController,
+                      enabled: false,
+                      style: TextStyle(color: textColor),
+                      decoration: InputDecoration(
+                        labelText: '역 검색',
+                        labelStyle: TextStyle(color: textColor),
+                        suffixIcon: Icon(Icons.search, color: textColor),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12.0),
+                          borderSide: BorderSide(
+                            color: backgroundColor,
+                            width: 2.0,
+                          ),
+                        ),
+                        disabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12.0),
+                          borderSide: BorderSide(
+                            color: backgroundColor,
+                            width: 1.0,
+                          ),
+                        ),
+                        filled: true,
+                        fillColor: backgroundColor,
+                      ),
+                    );
+                  },
+                )
             ),
           ),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(left: 15.0, top: 10.0, bottom: 5.0),
-                child: Text(
-                  '즐겨찾기',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ),
-              Center(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.5),
-                        spreadRadius: 1,
-                        blurRadius: 4,
-                        offset: Offset(3, 10),
-                      ),
-                    ],
-                  ),
-                  width: 390,
-                  height: 120,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.max,
-                    children: [
-                      ...List.generate(
-                        favoriteStations.length,
-                            (index) => Container(
-                          width: 75,
-                          height: 68,
-                          margin: EdgeInsets.symmetric(horizontal: 4),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                margin: EdgeInsets.only(left: 8.0),
-                                child: _buildFavoriteStationItem(favoriteStations[index], index),
-                              ),
-                            ],
-                          ),
+          Expanded(
+            child: Builder(
+              builder: (BuildContext context) {
+                final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+                final Color textColor = isDarkMode ? Colors.white : Colors.black;
+                final Color backgroundColor = isDarkMode ? Colors.grey[800]! : Colors.white;
+                final Color borderColor = isDarkMode ? Colors.grey[600]! : Colors.grey[300]!;
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 15.0, top: 10.0, bottom: 5.0),
+                      child: Text(
+                        '즐겨찾기',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: textColor,
                         ),
                       ),
-                      if (favoriteStations.length < 4)
-                        Container(
-                          width: 75,
-                          height: 68,
-                          margin: EdgeInsets.symmetric(horizontal: 4),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                margin: EdgeInsets.only(left: 8.0),
-                                child: _buildAddFavoriteButton(),
-                              ),
-                            ],
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-
-
-              Padding(
-                padding: const EdgeInsets.only(left: 15.0, top: 15.0, bottom: 5.0),
-                child: Text(
-                  '최근기록',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ),
-              Container(
-                margin: EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.grey[300]!, width: 1),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.5),
-                      spreadRadius: 1,
-                      blurRadius: 4,
-                      offset: Offset(0, 3),
                     ),
-                  ],
-                ),
-                height: 400,
-                child: ListView.builder(
-                  padding: const EdgeInsets.only(top: 15.0),
-                  itemCount: searchHistory.length,
-                  itemBuilder: (context, index) {
-                    final item = searchHistory[index];
-                    final Color lineColor = _getLineColor(item['lineNum']);
-                    return Container(
-                      margin: EdgeInsets.symmetric(vertical: 4.0, horizontal: 12.0),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.grey[300]!, width: 1),
-                      ),
-                      child: ListTile(
-                        contentPadding: EdgeInsets.symmetric(horizontal: 16.0),
-                        title: Text(
-                          item['stationName'],
-                          style: TextStyle(
-                            fontSize: 16.0,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        trailing: Container(
-                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: lineColor,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            item['lineNum'],
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
+                    Center(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: backgroundColor,
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.5),
+                              spreadRadius: 1,
+                              blurRadius: 4,
+                              offset: Offset(3, 10),
                             ),
-                          ),
+                          ],
                         ),
-                        onTap: () {
-                          final stationName = item['stationName'];
-                          final lineNum = item['lineNum'];
-                          addSearchHistory(stationName, lineNum);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => StationInfoScreen(
-                                stationName: stationName,
-                                lineNum: lineNum,
-                                stations: allStations
-                                    .where((s) => s['line_num'] == lineNum)
-                                    .toList(),
+                        width: 390,
+                        height: 120,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.max,
+                          children: [
+                            ...List.generate(
+                              favoriteStations.length,
+                                  (index) => Container(
+                                width: 75,
+                                height: 68,
+                                margin: EdgeInsets.symmetric(horizontal: 9),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Container(
+                                      margin: EdgeInsets.only(left: 8.0),
+                                      child: _buildFavoriteStationItem(favoriteStations[index], index),
+                                    ),
+                                  ],
+                                ),
                               ),
+                            ),
+                            if (favoriteStations.length < 4)
+                              Container(
+                                width: 75,
+                                height: 68,
+                                margin: EdgeInsets.symmetric(horizontal: 4),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Container(
+                                      margin: EdgeInsets.only(left: 8.0),
+                                      child: _buildAddFavoriteButton(),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 15.0, top: 15.0, bottom: 5.0),
+                      child: Text(
+                        '최근기록',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: textColor,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      margin: EdgeInsets.symmetric(vertical: 0, horizontal: 12.0),
+                      decoration: BoxDecoration(
+                        color: backgroundColor,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: borderColor, width: 1),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.5),
+                            spreadRadius: 1,
+                            blurRadius: 4,
+                            offset: Offset(7, 8),
+                          ),
+                        ],
+                      ),
+                      height: 400,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.only(top: 15.0),
+                        itemCount: searchHistory.length,
+                        itemBuilder: (context, index) {
+                          final item = searchHistory[index];
+                          final Color lineColor = _getLineColor(item['lineNum']);
+                          final displayLineNum = item['lineNum'].replaceFirst(RegExp(r'^0'), '');
+                          return Container(
+                            margin: EdgeInsets.symmetric(vertical: 4.0, horizontal: 12.0),
+                            decoration: BoxDecoration(
+                              color: backgroundColor,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: borderColor, width: 1),
+                            ),
+                            child: ListTile(
+                              contentPadding: EdgeInsets.symmetric(horizontal: 16.0),
+                              title: Text(
+                                item['stationName'],
+                                style: TextStyle(
+                                  color: textColor,
+                                  fontSize: 16.0,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              trailing: Container(
+                                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: lineColor,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  displayLineNum,  // 여기서 수정된 호선 번호를 사용합니다
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              onTap: () {
+                                final stationName = item['stationName'];
+                                final lineNum = item['lineNum'];  // 원래의 lineNum을 사용합니다
+                                addSearchHistory(stationName, lineNum);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => StationInfoScreen(
+                                      stationName: stationName,
+                                      lineNum: lineNum,  // 원래의 lineNum을 사용합니다
+                                      stations: allStations
+                                          .where((s) => s['line_num'] == lineNum)
+                                          .toList(),
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
                           );
                         },
                       ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
+                    )
+                  ],
+                );
+              },
+            ),
+          )
         ],
       ),
     );
@@ -849,20 +888,11 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
   Map<String, dynamic>? selectedTrain;
   bool showNotification = false;
 
-  void handleNotificationClick() {
-    setState(() {
-      showNotification = true;
-    });
-    Future.delayed(Duration(seconds: 5), () {
-      setState(() {
-        showNotification = false;
-      });
-    });
-  }
   @override
   void initState() {
     super.initState();
-    selectedIndex = widget.stations.indexWhere((station) => station['station_nm'] == widget.stationName);
+    selectedIndex = widget.stations
+        .indexWhere((station) => station['station_nm'] == widget.stationName);
     _pageController = PageController(
       initialPage: selectedIndex,
       viewportFraction: 0.3,
@@ -870,10 +900,17 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
     _loadInitialData();
   }
 
-
   Future<void> _loadInitialData() async {
     await fetchStationInfo();
   }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _pageController.dispose();
+    super.dispose();
+  }
+
 
   String _getSubwayId(String lineNum) {
     final Map<String, String> subwayIds = {
@@ -903,7 +940,7 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
       isLoading = true;
     });
 
-    String apiKey = ''; //실제사용이 가능한 공공데이터 api키를 입력해주세요
+    String apiKey = '66614b6f41636e643530506a755858'; // 실제 API 키로 교체해야 합니다
     String formattedLineNum = widget.lineNum.replaceFirst(RegExp(r'^0'), '');
     String url = 'http://swopenAPI.seoul.go.kr/api/subway/$apiKey/xml/realtimePosition/0/100/$formattedLineNum';
 
@@ -951,7 +988,6 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
           trainInfoList = newTrainInfoList;
           isLoading = false;
         });
-
       } else {
         throw Exception('Failed to load train info: ${response.statusCode}');
       }
@@ -974,8 +1010,8 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
 
     int trainStationIndex = widget.stations.indexWhere((station) {
       return trainInfoList.any((train) =>
-      train['trainNo'] == trainNo && train['statnNm'] == station['station_nm']
-      );
+      train['trainNo'] == trainNo &&
+          train['statnNm'] == station['station_nm']);
     });
 
     if (trainStationIndex != -1) {
@@ -989,14 +1025,18 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
 
   String _getTrainStatus(String? status) {
     switch (status) {
-      case '0': return '진입';
-      case '1': return '도착';
-      case '2': return '출발';
-      case '3': return '전역출발';
-      default: return '알 수 없음';
+      case '0':
+        return '진입';
+      case '1':
+        return '도착';
+      case '2':
+        return '출발';
+      case '3':
+        return '전역출발';
+      default:
+        return '알 수 없음';
     }
   }
-
   Color _getLineColor(String lineNum) {
     final Map<String, Color> lineColors = {
       '01호선': Color(0XFF374A96),
@@ -1013,7 +1053,7 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
       '경춘선': Color(0xFF359697),
       '수인분당선': Color(0xFFEAB036),
       'GTX-A': Color(0xFF986293),
-      '공항철도':Color(0xFF5094FF),
+      '공항철도': Color(0xFF5094FF),
     };
     return lineColors[lineNum] ?? Colors.grey;
   }
@@ -1022,7 +1062,9 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
     final station = widget.stations[index];
     final stationName = station['station_nm'];
 
-    final matchingTrains = trainInfoList.where((train) => train['statnNm'] == stationName).toList();
+    final matchingTrains = trainInfoList
+        .where((train) => train['statnNm'] == stationName)
+        .toList();
     final upwardTrain = matchingTrains.firstWhere(
           (train) => train['updnLine'] == '0',
       orElse: () => <String, dynamic>{},
@@ -1053,8 +1095,7 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
                 stations: widget.stations,
                 lineColor: _getLineColor(widget.lineNum),
               ),
-              if (upwardTrain.isNotEmpty)
-                _buildTrainIcon(upwardTrain, true),
+              if (upwardTrain.isNotEmpty) _buildTrainIcon(upwardTrain, true),
               if (downwardTrain.isNotEmpty)
                 _buildTrainIcon(downwardTrain, false),
             ],
@@ -1063,7 +1104,6 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
       ],
     );
   }
-
 
   Widget _buildTrainIcon(Map<String, dynamic> train, bool isUpward) {
     final isExpress = train['directAt'] == '1' || train['directAt'] == '7';
@@ -1112,12 +1152,14 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
   void _selectTrain(String trainNo) {
     setState(() {
       selectedTrainNo = trainNo;
-      selectedTrain = trainInfoList.firstWhere((train) => train['trainNo'] == trainNo);
+      selectedTrain =
+          trainInfoList.firstWhere((train) => train['trainNo'] == trainNo);
       _centerTrainIcon(trainNo);
     });
   }
 
-  List<Map<String, dynamic>> _getUniqueTrains(List<Map<String, dynamic>> trains) {
+  List<Map<String, dynamic>> _getUniqueTrains(
+      List<Map<String, dynamic>> trains) {
     final Map<String, Map<String, dynamic>> uniqueTrains = {};
     for (var train in trains) {
       final trainNo = train['trainNo'];
@@ -1129,10 +1171,12 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
   }
 
   int _getStationIndex(String stationName) {
-    return widget.stations.indexWhere((station) => station['station_nm'] == stationName);
+    return widget.stations
+        .indexWhere((station) => station['station_nm'] == stationName);
   }
 
-  List<Map<String, dynamic>> _sortTrainsByDistance(List<Map<String, dynamic>> trains, bool isUpward) {
+  List<Map<String, dynamic>> _sortTrainsByDistance(
+      List<Map<String, dynamic>> trains, bool isUpward) {
     final selectedStationIndex = _getStationIndex(widget.stationName);
     trains.sort((a, b) {
       final aIndex = _getStationIndex(a['statnNm']);
@@ -1149,9 +1193,11 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
   }
 
   Widget _buildTrainList(bool isUpward) {
-    final filteredTrains = trainInfoList.where((train) =>
-    (isUpward && train['updnLine'] == '0') || (!isUpward && train['updnLine'] == '1')
-    ).toList();
+    final filteredTrains = trainInfoList
+        .where((train) =>
+    (isUpward && train['updnLine'] == '0') ||
+        (!isUpward && train['updnLine'] == '1'))
+        .toList();
 
     final uniqueTrains = _getUniqueTrains(filteredTrains);
     final sortedTrains = _sortTrainsByDistance(uniqueTrains, isUpward);
@@ -1176,11 +1222,11 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
     );
   }
 
-
   Widget _buildSelectedTrainInfo() {
     return Card(
       margin: EdgeInsets.all(16),
       elevation: 4,
+      color: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: EdgeInsets.all(16),
@@ -1192,7 +1238,10 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
               children: [
                 Text(
                   '열차 정보',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.blue[700]),
+                  style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue[700]),
                 ),
                 Icon(Icons.train, color: Colors.blue[700], size: 28),
               ],
@@ -1211,12 +1260,18 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
             else
               Column(
                 children: [
-                  _buildInfoRow(Icons.confirmation_number, '열차 번호', selectedTrain!['trainNo'] ?? '정보 없음'),
-                  _buildInfoRow(Icons.location_on, '현재 위치', selectedTrain!['statnNm'] ?? '정보 없음'),
-                  _buildInfoRow(Icons.flash_on, '급행 여부', _getExpressStatus(selectedTrain!['directAt'])),
-                  _buildInfoRow(Icons.last_page, '막차 여부', selectedTrain!['lstcarAt'] == '1' ? '막차' : '아님'),
-                  _buildInfoRow(Icons.info_outline, '상태', _getTrainStatus(selectedTrain!['trainSttus'])),
-                  _buildInfoRow(Icons.flag, '종착역', selectedTrain!['statnTnm'] ?? '정보 없음'),
+                  _buildInfoRow(Icons.confirmation_number, '열차 번호',
+                      selectedTrain!['trainNo'] ?? '정보 없음'),
+                  _buildInfoRow(Icons.location_on, '현재 위치',
+                      selectedTrain!['statnNm'] ?? '정보 없음'),
+                  _buildInfoRow(Icons.flash_on, '급행 여부',
+                      _getExpressStatus(selectedTrain!['directAt'] ?? '')),
+                  _buildInfoRow(Icons.last_page, '막차 여부',
+                      selectedTrain!['lstcarAt'] == '1' ? '막차' : '아님'),
+                  _buildInfoRow(Icons.info_outline, '상태',
+                      _getTrainStatus(selectedTrain!['trainSttus'])),
+                  _buildInfoRow(
+                      Icons.flag, '종착역', selectedTrain!['statnTnm'] ?? '정보 없음'),
                   if (showNotification)
                     Container(
                       padding: EdgeInsets.all(8),
@@ -1228,32 +1283,35 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.notifications_active, color: Colors.blue[700]),
+                          Icon(Icons.notifications_active,
+                              color: Colors.blue[700]),
                           SizedBox(width: 8),
                           Text(
                             '역을 선택하시면 됨니다!',
-                            style: TextStyle(color: Colors.blue[700], fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                                color: Colors.blue[700],
+                                fontWeight: FontWeight.bold),
                           ),
                         ],
                       ),
                     ),
-                        /* ElevatedButton(
-                    onPressed: handleNotificationClick,
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: Size(double.infinity, 50),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      backgroundColor: Colors.deepPurple,
+                  /* ElevatedButton(
+                  onPressed: handleNotificationClick,
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: Size(double.infinity, 50),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Text(
-                      '알림',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+                    backgroundColor: Colors.deepPurple,
+                  ),
+                  child: Text(
+                    '알림',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
-                  ),*/
+                  ),
+                ),*/
                 ],
               ),
           ],
@@ -1261,6 +1319,7 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
       ),
     );
   }
+
   Widget _buildInfoRow(IconData icon, String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -1273,7 +1332,9 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
               text: TextSpan(
                 style: TextStyle(fontSize: 16, color: Colors.black87),
                 children: [
-                  TextSpan(text: '$label: ', style: TextStyle(fontWeight: FontWeight.bold)),
+                  TextSpan(
+                      text: '$label: ',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
                   TextSpan(text: value),
                 ],
               ),
@@ -1299,7 +1360,7 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor:  Colors.transparent,
+        backgroundColor: Colors.transparent,
         title: Text('${widget.stationName} - ${widget.lineNum}'),
       ),
       body: isLoading
@@ -1320,12 +1381,7 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
       ),
     );
   }
-
-
 }
-
-
-
 
 class TrainIcon extends StatelessWidget {
   final Color lineColor;
@@ -1359,7 +1415,9 @@ class TrainIcon extends StatelessWidget {
               transform: Matrix4.rotationY(isUpward ? 0 : pi),
               child: Image.asset(
                 isExpress ? 'assets/train.png' : 'assets/train.png',
-                color: isSelected ? Colors.yellow : (isExpress ? Colors.red : lineColor),
+                color: isSelected
+                    ? Colors.yellow
+                    : (isExpress ? Colors.red : lineColor),
                 width: 50,
                 height: 50,
                 fit: BoxFit.contain,
@@ -1403,8 +1461,6 @@ class LinePainter extends CustomPainter {
       ..color = lineColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
-
-
   }
 
   @override
@@ -1438,7 +1494,7 @@ class StationMarker extends StatelessWidget {
             children: [
               // 선 그리기
               Container(
-                width: 500,  // 선의 너비를 늘려 원이 완전히 포함되도록 함
+                width: 500, // 선의 너비를 늘려 원이 완전히 포함되도록 함
                 height: 8,
                 color: lineColor,
               ),
@@ -1482,7 +1538,6 @@ class SettingsScreens extends StatelessWidget {
 
   void _showInquiryDialog(BuildContext context) {
     final TextEditingController _inquiryController = TextEditingController();
-
   }
 
   @override
@@ -1533,7 +1588,6 @@ class SettingsScreens extends StatelessWidget {
     required VoidCallback onTap,
     bool isBestValue = false,
   }) {
-
     return Stack(
       children: [
         Container(
@@ -1576,7 +1630,8 @@ class SettingsScreens extends StatelessWidget {
                     onPressed: onTap,
                     child: Text('구매'),
                     style: ElevatedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      padding:
+                      EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                     ),
                   ),
                 ],
@@ -1631,12 +1686,24 @@ class SettingsScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (BuildContext context) {
+        final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+        final Color textColor = isDarkMode ? Colors.white : Colors.black;
+        final Color primaryColor = isDarkMode ? Colors.blue[300]! : Colors.blue[700]!;
+        final Color backgroundColor = isDarkMode ? Colors.grey[800]! : Colors.white;
+        final Color inputFillColor = isDarkMode ? Colors.grey[700]! : Colors.grey[200]!;
+        final Color buttonColor = isDarkMode ? Colors.grey[700]! : Colors.grey[300]!;
+
         return AlertDialog(
+          backgroundColor: backgroundColor,
           title: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('문의하기', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.blue[700])),
-              Icon(Icons.help_outline, color: Colors.blue[700], size: 28),
+              Text('문의하기',
+                  style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: primaryColor)),
+              Icon(Icons.help_outline, color: primaryColor, size: 28),
             ],
           ),
           content: Container(
@@ -1646,38 +1713,49 @@ class SettingsScreen extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Divider(thickness: 1.5, height: 24),
-                  Text('문의 내용', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  Divider(thickness: 1.5, height: 24, color: primaryColor),
+                  Text('문의 내용',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor)),
                   SizedBox(height: 10),
                   TextField(
                     controller: _inquiryController,
                     maxLines: 5,
+                    style: TextStyle(color: textColor),
                     decoration: InputDecoration(
                       hintText: '문의 내용을 입력해주세요',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      hintStyle: TextStyle(color: textColor.withOpacity(0.6)),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12)),
                       filled: true,
-                      fillColor: Colors.grey[200],
+                      fillColor: inputFillColor,
                     ),
                   ),
                   SizedBox(height: 20),
-                  Text('문의 방법 선택', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text('문의 방법 선택',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor)),
                   SizedBox(height: 10),
                   _buildActionButton(
                     icon: Icons.email,
                     label: '이메일 앱으로 보내기',
                     onPressed: () => _sendEmail(_inquiryController.text, context),
+                    buttonColor: buttonColor,
+                    textColor: textColor,
                   ),
                   SizedBox(height: 10),
                   _buildActionButton(
                     icon: Icons.content_copy,
                     label: '이메일 주소 복사',
                     onPressed: () => _copyEmailAddress(context),
+                    buttonColor: buttonColor,
+                    textColor: textColor,
                   ),
-                  SizedBox(height: 10),
+                  SizedBox(height: 10,width: 100,),
                   _buildActionButton(
                     icon: Icons.note_add,
                     label: '문의 내용 복사',
                     onPressed: () => _copyInquiryContent(_inquiryController.text, context),
+                    buttonColor: buttonColor,
+                    textColor: textColor,
                   ),
                 ],
               ),
@@ -1685,7 +1763,7 @@ class SettingsScreen extends StatelessWidget {
           ),
           actions: [
             TextButton(
-              child: Text('닫기', style: TextStyle(color: Colors.grey[800])),
+              child: Text('닫기', style: TextStyle(color: primaryColor)),
               onPressed: () => Navigator.of(context).pop(),
             ),
           ],
@@ -1695,17 +1773,22 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButton({required IconData icon, required String label, required VoidCallback onPressed}) {
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onPressed,
+    required Color buttonColor,
+    required Color textColor,
+  }) {
     return ElevatedButton.icon(
-      icon: Icon(icon, color: Colors.white),
-      label: Text(label),
-      onPressed: onPressed,
+      icon: Icon(icon, color: textColor),
+      label: Text(label, style: TextStyle(color: textColor)),
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.blue[700],
-        foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        backgroundColor: buttonColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       ),
+      onPressed: onPressed,
     );
   }
 
@@ -1726,43 +1809,58 @@ class SettingsScreen extends StatelessWidget {
 
   void _copyEmailAddress(BuildContext context) {
     Clipboard.setData(ClipboardData(text: 'cm0308cm@gmail.com'));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('이메일 주소가 복사되었습니다.')),
+    );
   }
 
   void _copyInquiryContent(String content, BuildContext context) {
     final String emailContent = '$content';
     Clipboard.setData(ClipboardData(text: emailContent));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('문의 내용이 복사되었습니다.')),
+    );
   }
 
   String? encodeQueryParameters(Map<String, String> params) {
     return params.entries
-        .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+        .map((e) =>
+    '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
         .join('&');
   }
 
   @override
   Widget build(BuildContext context) {
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final Color textColor = isDarkMode ? Colors.white : Colors.black;
+    final Color backgroundColor = isDarkMode ? Colors.grey[900]! : Colors.white;
+    final Color tileColor = isDarkMode ? Colors.grey[800]! : Colors.grey[100]!;
+
     return Scaffold(
       appBar: AppBar(
-        backgroundColor:  Colors.transparent,
-        title: Text('설정'),
+        backgroundColor: Colors.transparent,
+        title: Text('설정', style: TextStyle(color: textColor)),
+        iconTheme: IconThemeData(color: textColor),
       ),
+      backgroundColor: backgroundColor,
       body: ListView(
         children: [
-        /*  SwitchListTile(
-            title: Text('다크 모드'),
-            value: isDarkMode,
+          SwitchListTile(
+            title: Text('다크 모드', style: TextStyle(color: textColor)),
+            value: this.isDarkMode,
             onChanged: (value) {
               toggleDarkMode(value);
             },
             activeColor: Colors.blue,
             inactiveThumbColor: Colors.grey,
             inactiveTrackColor: Colors.grey.shade300,
+            tileColor: tileColor,
           ),
-          */
           ListTile(
-            title: Text('문의하기'),
-            trailing: Icon(Icons.arrow_forward_ios),
+            title: Text('문의하기', style: TextStyle(color: textColor)),
+            trailing: Icon(Icons.arrow_forward_ios, color: textColor),
             onTap: () => _showInquiryDialog(context),
+            tileColor: tileColor,
           ),
           // 여기에 다른 설정 항목들을 추가할 수 있습니다.
         ],
