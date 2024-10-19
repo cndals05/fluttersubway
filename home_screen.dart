@@ -577,19 +577,13 @@ class _CombinedScreenState extends State<CombinedScreen> {
           padding: EdgeInsets.zero,
           children: <Widget>[
             SizedBox(
-              height: 100.0,
+              width: double.infinity, // 원하는 너비를 설정
+              height: 80, // 원하는 높이를 설정
               child: DrawerHeader(
                 decoration: BoxDecoration(
                   color: Colors.blue,
                 ),
-                child: Center(
-                  child: Text(
-                    '메뉴',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                    ),
-                  ),
+                child: Row(
                 ),
               ),
             ),
@@ -1404,37 +1398,37 @@ class TrainIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final Color textColor = isDarkMode ? Colors.white : Colors.black;
     return Container(
       width: 50,
       height: 50,
       child: Stack(
+        alignment: Alignment.center,
         children: [
-          Center(
-            child: Transform(
-              alignment: Alignment.center,
-              transform: Matrix4.rotationY(isUpward ? 0 : pi),
-              child: Image.asset(
-                isExpress ? 'assets/train.png' : 'assets/train.png',
-                color: isSelected
-                    ? Colors.yellow
-                    : (isExpress ? Colors.red : lineColor),
-                width: 50,
-                height: 50,
-                fit: BoxFit.contain,
-              ),
+          Transform(
+            alignment: Alignment.center,
+            transform: Matrix4.rotationY(isUpward ? 0 : pi),
+            child: Image.asset(
+              isExpress ? 'assets/train.png' : 'assets/train.png',
+              color: isSelected
+                  ? Colors.yellow
+                  : (isExpress ? Colors.red : lineColor),
+              width: 50,
+              height: 50,
+              fit: BoxFit.contain,
             ),
           ),
-          Positioned.fill(
-            child: Center(
-              child: Text(
-                '$trainNo',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  height: -1,
-                  color: lineColor,
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                ),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+
+            child: Text(
+              trainNo,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: textColor,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ),
