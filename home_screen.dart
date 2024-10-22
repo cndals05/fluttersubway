@@ -444,7 +444,6 @@ class _CombinedScreenState extends State<CombinedScreen> {
     final Color textColor = isDarkMode ? Colors.white : Colors.black;
     final Color backgroundColor = isDarkMode ? Colors.grey[800]! : Colors.white;
 
-    // 바텀시트를 표시하기 전에 검색어 초기화
     _searchController.text = '';
 
     showModalBottomSheet(
@@ -466,7 +465,7 @@ class _CombinedScreenState extends State<CombinedScreen> {
                     padding: EdgeInsets.fromLTRB(16, 20, 16, 10),
                     child: TextField(
                       controller: _searchController,
-                      autofocus: true, // 바텀시트가 열릴 때 자동으로 포커스
+                      autofocus: true,
                       onChanged: (query) {
                         setModalState(() {
                           searchStations(query);
@@ -494,7 +493,7 @@ class _CombinedScreenState extends State<CombinedScreen> {
 
                         return ListTile(
                           title: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween, // 양쪽 끝으로 정렬
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
                                 stationName,
@@ -524,22 +523,33 @@ class _CombinedScreenState extends State<CombinedScreen> {
                           onTap: () {
                             if (forFavorites) {
                               addToFavorites(stationName, lineNum);
+                              Navigator.pop(context);
                             } else {
+                              // 현재 context를 변수에 저장
+                              final currentContext = context;
                               addSearchHistory(stationName, lineNum);
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => StationInfoScreen(
-                                    stationName: stationName,
-                                    lineNum: lineNum,
-                                    stations: allStations
-                                        .where((s) => s['line_num'] == lineNum)
-                                        .toList(),
-                                  ),
-                                ),
-                              );
+
+                              // 바텀시트를 닫고 나서 새로운 화면으로 이동
+                              Navigator.pop(currentContext);
+
+                              // 약간의 딜레이 후 새 화면으로 이동
+                              Future.delayed(Duration(milliseconds: 100), () {
+                                if (currentContext.mounted) {
+                                  Navigator.push(
+                                    currentContext,
+                                    MaterialPageRoute(
+                                      builder: (context) => StationInfoScreen(
+                                        stationName: stationName,
+                                        lineNum: lineNum,
+                                        stations: allStations
+                                            .where((s) => s['line_num'] == lineNum)
+                                            .toList(),
+                                      ),
+                                    ),
+                                  );
+                                }
+                              });
                             }
-                            Navigator.pop(context);
                           },
                         );
                       },
@@ -552,7 +562,6 @@ class _CombinedScreenState extends State<CombinedScreen> {
         );
       },
     ).then((_) {
-      // 바텀시트가 닫힐 때 검색어 초기화
       _searchController.clear();
       setState(() {
         filteredStations = [];
