@@ -10,6 +10,7 @@ import 'dart:async';
 import 'package:xml/xml.dart' as xml;
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:math' show pi;
+import 'dart:io' show Platform;
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -178,7 +179,7 @@ class _CombinedScreenState extends State<CombinedScreen> {
               color: Colors.grey.withOpacity(0.3),
               spreadRadius: 1,
               blurRadius: 2,
-              offset: Offset(0, 1),
+              offset: Offset(4, 5),
             ),
           ],
         ),
@@ -243,7 +244,7 @@ class _CombinedScreenState extends State<CombinedScreen> {
               color: Colors.grey.withOpacity(0.3),
               spreadRadius: 1,
               blurRadius: 2,
-              offset: Offset(0, 1),
+              offset: Offset(4, 5),
             ),
           ],
         ),
@@ -439,6 +440,13 @@ class _CombinedScreenState extends State<CombinedScreen> {
   }
 
   void _showSearchBottomSheet({bool forFavorites = false, int? favoriteIndex}) {
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final Color textColor = isDarkMode ? Colors.white : Colors.black;
+    final Color backgroundColor = isDarkMode ? Colors.grey[800]! : Colors.white;
+
+    // 바텀시트를 표시하기 전에 검색어 초기화
+    _searchController.text = '';
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -449,7 +457,7 @@ class _CombinedScreenState extends State<CombinedScreen> {
             return Container(
               height: MediaQuery.of(context).size.height * 0.9,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: backgroundColor,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
               ),
               child: Column(
@@ -458,18 +466,19 @@ class _CombinedScreenState extends State<CombinedScreen> {
                     padding: EdgeInsets.fromLTRB(16, 20, 16, 10),
                     child: TextField(
                       controller: _searchController,
+                      autofocus: true, // 바텀시트가 열릴 때 자동으로 포커스
                       onChanged: (query) {
                         setModalState(() {
                           searchStations(query);
                         });
                       },
-                      style: TextStyle(color: Colors.black), // Set input text color to black
+                      style: TextStyle(color: textColor),
                       decoration: InputDecoration(
                         labelText: '역 검색',
-                        labelStyle: TextStyle(color: Colors.black),
-                        suffixIcon: Icon(
-                          Icons.search,
-                          color: Colors.black,
+                        labelStyle: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+                        suffixIcon: Icon(Icons.search, color: textColor),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12.0),
                         ),
                       ),
                     ),
@@ -481,16 +490,40 @@ class _CombinedScreenState extends State<CombinedScreen> {
                         final station = filteredStations[index];
                         final stationName = station['station_nm'];
                         final lineNum = station['line_num'];
+                        final lineColor = _getLineColor(lineNum);
 
                         return ListTile(
-                          title: Text(
-                            '$stationName - $lineNum',
-                            style: TextStyle(color: Colors.black), // Keep the color black
+                          title: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween, // 양쪽 끝으로 정렬
+                            children: [
+                              Text(
+                                stationName,
+                                style: TextStyle(
+                                  color: textColor,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              Container(
+                                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: lineColor,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  lineNum.replaceFirst(RegExp(r'^0'), ''),
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                           onTap: () {
                             if (forFavorites) {
                               addToFavorites(stationName, lineNum);
-                              Navigator.pop(context);
                             } else {
                               addSearchHistory(stationName, lineNum);
                               Navigator.push(
@@ -506,18 +539,25 @@ class _CombinedScreenState extends State<CombinedScreen> {
                                 ),
                               );
                             }
+                            Navigator.pop(context);
                           },
                         );
                       },
                     ),
-                  ),
+                  )
                 ],
               ),
             );
           },
         );
       },
-    );
+    ).then((_) {
+      // 바텀시트가 닫힐 때 검색어 초기화
+      _searchController.clear();
+      setState(() {
+        filteredStations = [];
+      });
+    });
   }
 
 
@@ -626,18 +666,18 @@ class _CombinedScreenState extends State<CombinedScreen> {
           GestureDetector(
             onTap: _showSearchBottomSheet,
             child: Container(
-              padding: EdgeInsets.all(8.0),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12.0),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.5),
-                    spreadRadius: -10,
-                    blurRadius: 4,
-                    offset: Offset(3, 10),
-                  ),
-                ],
-              ),
+                padding: EdgeInsets.all(8.0),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12.0),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.5),
+                      spreadRadius: -10,
+                      blurRadius: 4,
+                      offset: Offset(3, 10),
+                    ),
+                  ],
+                ),
                 child: Builder(
                   builder: (BuildContext context) {
                     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
@@ -711,7 +751,7 @@ class _CombinedScreenState extends State<CombinedScreen> {
                             ),
                           ],
                         ),
-                        width: 390,
+                        width: 380,
                         height: 120,
                         child: Row(
                           mainAxisSize: MainAxisSize.max,
@@ -784,7 +824,7 @@ class _CombinedScreenState extends State<CombinedScreen> {
                           ),
                         ],
                       ),
-                      height: 400,
+                      height: MediaQuery.of(context).size.height * 0.5, // 화면 높이의 50%로 설정
                       child: ListView.builder(
                         padding: const EdgeInsets.only(top: 15.0),
                         itemCount: searchHistory.length,
@@ -845,7 +885,7 @@ class _CombinedScreenState extends State<CombinedScreen> {
                           );
                         },
                       ),
-                    )
+                    ),
                   ],
                 );
               },
@@ -876,34 +916,157 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
   late PageController _pageController;
   late int selectedIndex;
   List<Map<String, dynamic>> trainInfoList = [];
+  List<dynamic> allStations = [];
   bool isLoading = true;
   Timer? _timer;
   String? selectedTrainNo;
   Map<String, dynamic>? selectedTrain;
   bool showNotification = false;
+  late String currentLine;
 
   @override
   void initState() {
     super.initState();
-    selectedIndex = widget.stations
-        .indexWhere((station) => station['station_nm'] == widget.stationName);
-    _pageController = PageController(
-      initialPage: selectedIndex,
-      viewportFraction: 0.3,
-    );
+    currentLine = widget.lineNum;
     _loadInitialData();
   }
 
   Future<void> _loadInitialData() async {
-    await fetchStationInfo();
+    setState(() {
+      isLoading = true;
+    });
+    try {
+      // 전체 데이터 로드
+      String jsonString = await rootBundle.loadString('assets/seoul_subway.json');
+      final jsonResponse = json.decode(jsonString);
+
+      setState(() {
+        if (jsonResponse['DATA'] != null) {
+          allStations = jsonResponse['DATA'];
+          // 현재 노선의 역들만 필터링
+          List<dynamic> currentLineStations = allStations
+              .where((station) => station['line_num'] == currentLine)
+              .toList();
+
+          // 현재 역의 인덱스 찾기
+          selectedIndex = currentLineStations.indexWhere(
+                  (station) => station['station_nm'] == widget.stationName
+          );
+
+          if (selectedIndex == -1) selectedIndex = 0;
+
+          // PageController 초기화
+          _pageController = PageController(
+            initialPage: selectedIndex,
+            viewportFraction: 0.3,
+          );
+
+          // 페이지 로드 후 자동으로 선택된 역으로 스크롤
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              _pageController.animateToPage(
+                selectedIndex,
+                duration: Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              );
+            }
+          });
+        }
+      });
+
+      // 실시간 열차 정보 로드
+      await fetchStationInfo();
+    } catch (e) {
+      print('Error loading station data: $e');
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
+  void _changeLine(String newLine) async {
+    setState(() {
+      currentLine = newLine;
+      isLoading = true;
+      trainInfoList = [];
+    });
+
+    // 새로운 호선의 역 목록 필터링
+    List<dynamic> newLineStations = allStations
+        .where((station) => station['line_num'] == newLine)
+        .toList();
+
+    // 현재 역의 새로운 인덱스 찾기
+    int newIndex = newLineStations.indexWhere(
+            (station) => station['station_nm'] == widget.stationName
+    );
+
+    if (newIndex == -1) newIndex = 0;
+
+    // PageController 재설정
+    _pageController.dispose();
+    _pageController = PageController(
+      initialPage: newIndex,
+      viewportFraction: 0.3,
+    );
+
+    // 새로운 데이터 로드
+    await fetchStationInfo();
+
+    setState(() {
+      selectedIndex = newIndex;
+      isLoading = false;
+      selectedTrainNo = null;
+      selectedTrain = null;
+    });
+
+    // 화면 갱신 후 스크롤
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _pageController.animateToPage(
+          newIndex,
+          duration: Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
+
+    // Timer 재설정
+    _timer?.cancel();
+    _timer = Timer.periodic(Duration(seconds: 30), (timer) {
+      if (mounted) {
+        fetchStationInfo();
+      }
+    });
+  }
+
+  void _scrollToStation(String stationName) {
+    List<dynamic> currentLineStations = allStations
+        .where((station) => station['line_num'] == currentLine)
+        .toList();
+
+    final stationIndex = currentLineStations.indexWhere(
+            (station) => station['station_nm'] == stationName
+    );
+
+    if (stationIndex != -1 && mounted) {
+      _pageController.animateToPage(
+        stationIndex,
+        duration: Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
   @override
   void dispose() {
     _timer?.cancel();
     _pageController.dispose();
     super.dispose();
   }
+
+
+
 
 
   String _getSubwayId(String lineNum) {
@@ -930,12 +1093,14 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
   }
 
   Future<void> fetchStationInfo() async {
+    if (!mounted) return;
+
     setState(() {
       isLoading = true;
     });
 
-    String apiKey = '66614b6f41636e643530506a755858'; // 실제 API 키로 교체해야 합니다
-    String formattedLineNum = widget.lineNum.replaceFirst(RegExp(r'^0'), '');
+    String apiKey = '66614b6f41636e643530506a755858';
+    String formattedLineNum = currentLine.replaceFirst(RegExp(r'^0'), '');
     String url = 'http://swopenAPI.seoul.go.kr/api/subway/$apiKey/xml/realtimePosition/0/100/$formattedLineNum';
 
     try {
@@ -978,17 +1143,21 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
           }
         }
 
-        setState(() {
-          trainInfoList = newTrainInfoList;
-          isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            trainInfoList = newTrainInfoList;
+            isLoading = false;
+          });
+        }
       } else {
         throw Exception('Failed to load train info: ${response.statusCode}');
       }
     } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
       print('Error fetching station info: $e');
     }
   }
@@ -1000,23 +1169,30 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
   void _centerTrainIcon(String trainNo) {
     setState(() {
       selectedTrainNo = trainNo;
+      selectedTrain = trainInfoList.firstWhere((train) => train['trainNo'] == trainNo);
     });
 
-    int trainStationIndex = widget.stations.indexWhere((station) {
-      return trainInfoList.any((train) =>
-      train['trainNo'] == trainNo &&
-          train['statnNm'] == station['station_nm']);
-    });
+    // 선택된 열차의 현재 역 찾기
+    final selectedTrainStation = selectedTrain?['statnNm'] ?? '';
 
-    if (trainStationIndex != -1) {
+    // 현재 호선의 역 목록에서 해당 역의 인덱스 찾기
+    List<dynamic> currentStations = allStations
+        .where((station) => station['line_num'] == currentLine)
+        .toList();
+
+    final stationIndex = currentStations.indexWhere(
+            (station) => station['station_nm'] == selectedTrainStation
+    );
+
+    if (stationIndex != -1) {
+      // 해당 역으로 스크롤
       _pageController.animateToPage(
-        trainStationIndex,
+        stationIndex,
         duration: Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
     }
   }
-
   String _getTrainStatus(String? status) {
     switch (status) {
       case '0':
@@ -1053,7 +1229,11 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
   }
 
   Widget _buildStationView(BuildContext context, int index) {
-    final station = widget.stations[index];
+    List<dynamic> currentStations = allStations
+        .where((station) => station['line_num'] == currentLine)
+        .toList();
+
+    final station = currentStations[index];
     final stationName = station['station_nm'];
 
     final matchingTrains = trainInfoList
@@ -1078,18 +1258,19 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
                 size: Size(MediaQuery.of(context).size.width, 50),
                 painter: LinePainter(
                   isLeftStation: index > 0,
-                  isRightStation: index < widget.stations.length - 1,
-                  lineColor: _getLineColor(widget.lineNum),
+                  isRightStation: index < currentStations.length - 1,
+                  lineColor: _getLineColor(currentLine),  // currentLine 사용
                 ),
               ),
               StationMarker(
                 stationName: stationName,
                 isSelected: stationName == widget.stationName,
                 trainInfoList: trainInfoList,
-                stations: widget.stations,
-                lineColor: _getLineColor(widget.lineNum),
+                stations: currentStations,  // currentStations 사용
+                lineColor: _getLineColor(currentLine),  // currentLine 사용
               ),
-              if (upwardTrain.isNotEmpty) _buildTrainIcon(upwardTrain, true),
+              if (upwardTrain.isNotEmpty)
+                _buildTrainIcon(upwardTrain, true),
               if (downwardTrain.isNotEmpty)
                 _buildTrainIcon(downwardTrain, false),
             ],
@@ -1105,6 +1286,8 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
 
     final verticalSpacing = 20.0;
     final baseTopMargin = isUpward ? 30.0 : 150.0;
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final Color textColor = isDarkMode ? Colors.white : Colors.black;
 
     return Positioned(
       top: baseTopMargin,
@@ -1114,22 +1297,18 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
           children: [
             Container(
               padding: EdgeInsets.all(2),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.7),
-                borderRadius: BorderRadius.circular(4),
-              ),
               child: Text(
                 '${train['statnTnm'] ?? ''}행',
                 style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
+                  color: textColor,
+                  fontSize: 12,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
             SizedBox(height: 2),
             TrainIcon(
-              lineColor: _getLineColor(widget.lineNum),
+              lineColor: _getLineColor(currentLine),  // currentLine 사용
               isExpress: isExpress,
               isUpward: isUpward,
               isSelected: isSelected,
@@ -1349,25 +1528,120 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
         return '일반';
     }
   }
+  List<String> getTransferLines() {
+    if (allStations.isEmpty) {
+      return [];
+    }
+
+    Set<String> lines = {};
+    for (var station in allStations) {
+      if (station['station_nm'] == widget.stationName) {
+        String lineNum = station['line_num'];
+        lines.add(lineNum);
+      }
+    }
+
+    List<String> sortedLines = lines.toList()
+      ..sort((a, b) {
+        bool aIsNumeric = a.startsWith(RegExp(r'[0-9]'));
+        bool bIsNumeric = b.startsWith(RegExp(r'[0-9]'));
+
+        if (aIsNumeric && bIsNumeric) {
+          int aNum = int.parse(a.replaceAll(RegExp(r'[^0-9]'), ''));
+          int bNum = int.parse(b.replaceAll(RegExp(r'[^0-9]'), ''));
+          return aNum.compareTo(bNum);
+        } else if (aIsNumeric) {
+          return -1;
+        } else if (bIsNumeric) {
+          return 1;
+        } else {
+          return a.compareTo(b);
+        }
+      });
+
+    return sortedLines;
+  }
+
+  Widget _buildTransferInfo() {
+    final transferLines = getTransferLines();
+    if (transferLines.isEmpty) return SizedBox.shrink();
+
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: transferLines.map((line) {
+          String displayNum = line;
+          if (line.contains('호선')) {
+            displayNum = line.replaceFirst(RegExp(r'^0'), '').replaceAll('호선', '');
+          } else if (line == '경의중앙선') {
+            displayNum = '경의';
+          } else if (line == '수인분당선') {
+            displayNum = '분당';
+          } else if (line == '공항철도') {
+            displayNum = '공항';
+          }
+
+          bool isSelected = currentLine == line;
+
+          return GestureDetector(
+            onTap: () {
+              if (!isSelected) {
+                _changeLine(line);
+              }
+            },
+            child: Container(
+              margin: EdgeInsets.symmetric(horizontal: 4),
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: _getLineColor(line),
+                shape: BoxShape.circle,
+                border: isSelected ? Border.all(
+                  color: Colors.yellow,
+                  width: 3,
+                ) : null,
+              ),
+              child: Text(
+                displayNum,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    List<dynamic> currentStations = allStations
+        .where((station) => station['line_num'] == currentLine)
+        .toList();
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        title: Text('${widget.stationName} - ${widget.lineNum}'),
+        title: Text(widget.stationName),
       ),
       body: isLoading
           ? Center(child: CircularProgressIndicator())
           : Column(
         children: [
-          SizedBox(height: 20),
+          _buildTransferInfo(),
+          SizedBox(height: 12),
           Container(
             height: 250,
             child: PageView.builder(
               controller: _pageController,
-              itemCount: widget.stations.length,
-              itemBuilder: _buildStationView,
+              itemCount: currentStations.length,
+              itemBuilder: (context, index) => _buildStationView(
+                context,
+                index,
+              ),
             ),
           ),
           _buildSelectedTrainInfo(),
@@ -1375,7 +1649,7 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
       ),
     );
   }
-}
+} // _StationInfoScreenState의 끝
 
 class TrainIcon extends StatelessWidget {
   final Color lineColor;
@@ -1386,7 +1660,7 @@ class TrainIcon extends StatelessWidget {
   final List<dynamic> stations;
   final bool isSelected;
 
-  TrainIcon({
+  const TrainIcon({
     required this.lineColor,
     required this.isExpress,
     required this.isUpward,
@@ -1410,23 +1684,31 @@ class TrainIcon extends StatelessWidget {
             alignment: Alignment.center,
             transform: Matrix4.rotationY(isUpward ? 0 : pi),
             child: Image.asset(
-              isExpress ? 'assets/train.png' : 'assets/train.png',
+              'assets/train.png',
               color: isSelected
                   ? Colors.yellow
                   : (isExpress ? Colors.red : lineColor),
               width: 50,
               height: 50,
               fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) {
+                print('Error loading image: $error');
+                return Container(
+                  width: 50,
+                  height: 50,
+                  color: Colors.grey[300],
+                  child: Icon(Icons.train, color: Colors.grey[600]),
+                );
+              },
             ),
           ),
           Container(
             padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-
             child: Text(
               trainNo,
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: textColor,
+                color: Colors.black,
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
               ),
@@ -1476,6 +1758,7 @@ class StationMarker extends StatelessWidget {
     required this.stations,
     required this.lineColor,
   }) : super(key: key);
+
 
   @override
   Widget build(BuildContext context) {
@@ -1674,158 +1957,36 @@ class SettingsScreen extends StatelessWidget {
 
   SettingsScreen({required this.toggleDarkMode, required this.isDarkMode});
 
-  void _showInquiryDialog(BuildContext context) {
-    final TextEditingController _inquiryController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-        final Color textColor = isDarkMode ? Colors.white : Colors.black;
-        final Color primaryColor = isDarkMode ? Colors.blue[300]! : Colors.blue[700]!;
-        final Color backgroundColor = isDarkMode ? Colors.grey[800]! : Colors.white;
-        final Color inputFillColor = isDarkMode ? Colors.grey[700]! : Colors.grey[200]!;
-        final Color buttonColor = isDarkMode ? Colors.grey[700]! : Colors.grey[300]!;
-
-        return AlertDialog(
-          backgroundColor: backgroundColor,
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('문의하기',
-                  style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: primaryColor)),
-              Icon(Icons.help_outline, color: primaryColor, size: 28),
-            ],
-          ),
-          content: Container(
-            width: double.maxFinite,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Divider(thickness: 1.5, height: 24, color: primaryColor),
-                  Text('문의 내용',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor)),
-                  SizedBox(height: 10),
-                  TextField(
-                    controller: _inquiryController,
-                    maxLines: 5,
-                    style: TextStyle(color: textColor),
-                    decoration: InputDecoration(
-                      hintText: '문의 내용을 입력해주세요',
-                      hintStyle: TextStyle(color: textColor.withOpacity(0.6)),
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      filled: true,
-                      fillColor: inputFillColor,
-                    ),
-                  ),
-                  SizedBox(height: 20),
-                  Text('문의 방법 선택',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor)),
-                  SizedBox(height: 10),
-                  _buildActionButton(
-                    icon: Icons.email,
-                    label: '이메일 앱으로 보내기',
-                    onPressed: () => _sendEmail(_inquiryController.text, context),
-                    buttonColor: buttonColor,
-                    textColor: textColor,
-                  ),
-                  SizedBox(height: 10),
-                  _buildActionButton(
-                    icon: Icons.content_copy,
-                    label: '이메일 주소 복사',
-                    onPressed: () => _copyEmailAddress(context),
-                    buttonColor: buttonColor,
-                    textColor: textColor,
-                  ),
-                  SizedBox(height: 10,width: 100,),
-                  _buildActionButton(
-                    icon: Icons.note_add,
-                    label: '문의 내용 복사',
-                    onPressed: () => _copyInquiryContent(_inquiryController.text, context),
-                    buttonColor: buttonColor,
-                    textColor: textColor,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              child: Text('닫기', style: TextStyle(color: primaryColor)),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ],
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+  // 카카오톡 채널 URL로 바로 이동하는 함수
+  Future<void> _openKakaoChannel(BuildContext context) async {
+    final Uri url = Uri.parse('http://pf.kakao.com/_fnqEn');
+    try {
+      if (await canLaunchUrl(url)) {
+        await launchUrl(
+          url,
+          mode: LaunchMode.externalApplication,
         );
-      },
-    );
-  }
-
-  Widget _buildActionButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onPressed,
-    required Color buttonColor,
-    required Color textColor,
-  }) {
-    return ElevatedButton.icon(
-      icon: Icon(icon, color: textColor),
-      label: Text(label, style: TextStyle(color: textColor)),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: buttonColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      ),
-      onPressed: onPressed,
-    );
-  }
-
-  void _sendEmail(String body, BuildContext context) async {
-    final Uri emailLaunchUri = Uri(
-      scheme: 'mailto',
-      path: 'cm0308cm@gmail.com',
-      query: encodeQueryParameters(<String, String>{
-        'subject': '앱 문의사항',
-        'body': body,
-      }),
-    );
-
-    if (await canLaunchUrl(emailLaunchUri)) {
-      await launchUrl(emailLaunchUri);
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('카카오톡 채널을 열 수 없습니다.')),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('카카오톡 채널을 열 수 없습니다.')),
+        );
+      }
     }
-  }
-
-  void _copyEmailAddress(BuildContext context) {
-    Clipboard.setData(ClipboardData(text: 'cm0308cm@gmail.com'));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('이메일 주소가 복사되었습니다.')),
-    );
-  }
-
-  void _copyInquiryContent(String content, BuildContext context) {
-    final String emailContent = '$content';
-    Clipboard.setData(ClipboardData(text: emailContent));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('문의 내용이 복사되었습니다.')),
-    );
-  }
-
-  String? encodeQueryParameters(Map<String, String> params) {
-    return params.entries
-        .map((e) =>
-    '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
-        .join('&');
   }
 
   @override
   Widget build(BuildContext context) {
-    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final bool isDarkMode = Theme
+        .of(context)
+        .brightness == Brightness.dark;
     final Color textColor = isDarkMode ? Colors.white : Colors.black;
     final Color backgroundColor = isDarkMode ? Colors.grey[900]! : Colors.white;
     final Color tileColor = isDarkMode ? Colors.grey[800]! : Colors.grey[100]!;
@@ -1836,9 +1997,34 @@ class SettingsScreen extends StatelessWidget {
         title: Text('설정', style: TextStyle(color: textColor)),
         iconTheme: IconThemeData(color: textColor),
       ),
-      backgroundColor: backgroundColor,
       body: ListView(
+        padding: EdgeInsets.all(16.0), // 여백 추가
         children: [
+          SizedBox(
+            width: 100,
+            height: 120,
+            child: Center(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.yellow,
+                  borderRadius: BorderRadius.circular(10), // 둥근 모서리
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.3),
+                      spreadRadius: 1,
+                      blurRadius: 2,
+                      offset: Offset(4, 5), // 그림자 위치
+                    ),
+                  ],
+                ),
+                child: ListTile(
+                  title: Text(
+                    '카카오톡 1:1 채팅하기', textAlign: TextAlign.center,style: TextStyle(color:Colors.black,fontWeight: FontWeight.bold,),),
+                  onTap: () => _openKakaoChannel(context),
+                ),
+              ),
+            ),
+          ),
           SwitchListTile(
             title: Text('다크 모드', style: TextStyle(color: textColor)),
             value: this.isDarkMode,
@@ -1848,15 +2034,9 @@ class SettingsScreen extends StatelessWidget {
             activeColor: Colors.blue,
             inactiveThumbColor: Colors.grey,
             inactiveTrackColor: Colors.grey.shade300,
-            tileColor: tileColor,
+            contentPadding: EdgeInsets.all(0), // 패딩 조정
+            tileColor: Colors.transparent, // 다시 투명하게 설정
           ),
-          ListTile(
-            title: Text('문의하기', style: TextStyle(color: textColor)),
-            trailing: Icon(Icons.arrow_forward_ios, color: textColor),
-            onTap: () => _showInquiryDialog(context),
-            tileColor: tileColor,
-          ),
-          // 여기에 다른 설정 항목들을 추가할 수 있습니다.
         ],
       ),
     );
