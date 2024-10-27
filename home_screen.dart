@@ -646,7 +646,7 @@ class _CombinedScreenState extends State<CombinedScreen> {
             ),
             Text(
               '지어디?',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 19,fontWeight: FontWeight.bold),
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 19, fontWeight: FontWeight.bold),
             )
           ],
         ),
@@ -658,8 +658,8 @@ class _CombinedScreenState extends State<CombinedScreen> {
           padding: EdgeInsets.zero,
           children: <Widget>[
             SizedBox(
-              width: double.infinity, // 원하는 너비를 설정
-              height: 80, // 원하는 높이를 설정
+              width: double.infinity,
+              height: 80,
               child: DrawerHeader(
                 decoration: BoxDecoration(
                   color: Colors.blue,
@@ -683,31 +683,19 @@ class _CombinedScreenState extends State<CombinedScreen> {
                 );
               },
             ),
-            /* ListTile(
-              leading: Icon(Icons.add_card),
-              title: Text('구독'),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => SettingsScreens(
-                      toggleDarkMode: widget.toggleDarkMode,
-                    ),
-                  ),
-                );
-              },
-            ),*/
           ],
         ),
       ),
       body: isLoading
           ? Center(child: CircularProgressIndicator())
-          : Column(
+          : ListView(
         children: [
-          GestureDetector(
-            onTap: _showSearchBottomSheet,
-            child: Container(
-                padding: EdgeInsets.all(8.0),
+          // 검색 필드
+          Padding(
+            padding: EdgeInsets.all(8.0),
+            child: GestureDetector(
+              onTap: _showSearchBottomSheet,
+              child: Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12.0),
                   boxShadow: [
@@ -724,7 +712,6 @@ class _CombinedScreenState extends State<CombinedScreen> {
                     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
                     final Color backgroundColor = isDarkMode ? Colors.grey[800]! : Colors.white;
                     final Color textColor = isDarkMode ? Colors.white : Colors.black;
-                    final Color borderColor = isDarkMode ? Color(0xFF4B4B4B) : Color(0xFF5D5D5D);
 
                     return TextField(
                       controller: _searchController,
@@ -753,185 +740,187 @@ class _CombinedScreenState extends State<CombinedScreen> {
                       ),
                     );
                   },
-                )
+                ),
+              ),
             ),
           ),
-          Expanded(
-            child: Builder(
-              builder: (BuildContext context) {
-                final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-                final Color textColor = isDarkMode ? Colors.white : Colors.black;
-                final Color backgroundColor = isDarkMode ? Colors.grey[800]! : Colors.white;
-                final Color borderColor = isDarkMode ? Colors.grey[600]! : Colors.grey[300]!;
 
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left: 15.0, top: 10.0, bottom: 5.0),
-                      child: Text(
-                        '즐겨찾기',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: textColor,
-                        ),
-                      ),
-                    ),
-                    Center(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: backgroundColor,
-                          borderRadius: BorderRadius.circular(10),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withOpacity(0.5),
-                              spreadRadius: 1,
-                              blurRadius: 4,
-                              offset: Offset(3, 10),
-                            ),
-                          ],
-                        ),
-                        width: 380,
-                        height: 120,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.max,
-                          children: [
-                            ...List.generate(
-                              favoriteStations.length,
-                                  (index) => Container(
-                                width: 75,
-                                height: 68,
-                                margin: EdgeInsets.symmetric(horizontal: 9),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Container(
-                                      margin: EdgeInsets.only(left: 8.0),
-                                      child: _buildFavoriteStationItem(favoriteStations[index], index),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            if (favoriteStations.length < 4)
-                              Container(
-                                width: 75,
-                                height: 68,
-                                margin: EdgeInsets.symmetric(horizontal: 4),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Container(
-                                      margin: EdgeInsets.only(left: 8.0),
-                                      child: _buildAddFavoriteButton(),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(left: 15.0, top: 15.0, bottom: 5.0),
-                      child: Text(
-                        '최근기록',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: textColor,
-                        ),
-                      ),
-                    ),
-                    Container(
-                      margin: EdgeInsets.symmetric(vertical: 0, horizontal: 12.0),
+          // 즐겨찾기 섹션
+          Padding(
+            padding: const EdgeInsets.only(left: 15.0, top: 10.0, bottom: 5.0),
+            child: Text(
+              '즐겨찾기',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
+              ),
+            ),
+          ),
+
+          // 즐겨찾기 컨테이너
+          Center(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).brightness == Brightness.dark ? Colors.grey[800] : Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.5),
+                    spreadRadius: 1,
+                    blurRadius: 4,
+                    offset: Offset(3, 10),
+                  ),
+                ],
+              ),
+              width: 380,
+              height: 120,
+              child: Row(
+                mainAxisSize: MainAxisSize.max,
+                children: [
+                  ...List.generate(
+                    favoriteStations.length,
+                        (index) => Container(
+                      width: 75,
+                      height: 68,
+                      margin: EdgeInsets.symmetric(horizontal: 9),
                       decoration: BoxDecoration(
-                        color: backgroundColor,
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: borderColor, width: 1),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withOpacity(0.5),
-                            spreadRadius: 1,
-                            blurRadius: 4,
-                            offset: Offset(7, 8),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            margin: EdgeInsets.only(left: 8.0),
+                            child: _buildFavoriteStationItem(favoriteStations[index], index),
                           ),
                         ],
                       ),
-                      height: MediaQuery.of(context).size.height * 0.5, // 화면 높이의 50%로 설정
-                      child: ListView.builder(
-                        padding: const EdgeInsets.only(top: 15.0),
-                        itemCount: searchHistory.length,
-                        itemBuilder: (context, index) {
-                          final item = searchHistory[index];
-                          final Color lineColor = _getLineColor(item['lineNum']);
-                          final displayLineNum = item['lineNum'].replaceFirst(RegExp(r'^0'), '');
-                          return Container(
-                            margin: EdgeInsets.symmetric(vertical: 4.0, horizontal: 12.0),
-                            decoration: BoxDecoration(
-                              color: backgroundColor,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: borderColor, width: 1),
-                            ),
-                            child: ListTile(
-                              contentPadding: EdgeInsets.symmetric(horizontal: 16.0),
-                              title: Text(
-                                item['stationName'],
-                                style: TextStyle(
-                                  color: textColor,
-                                  fontSize: 16.0,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              trailing: Container(
-                                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: lineColor,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  displayLineNum,  // 여기서 수정된 호선 번호를 사용합니다
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              onTap: () {
-                                final stationName = item['stationName'];
-                                final lineNum = item['lineNum'];  // 원래의 lineNum을 사용합니다
-                                addSearchHistory(stationName, lineNum);
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => StationInfoScreen(
-                                      stationName: stationName,
-                                      lineNum: lineNum,  // 원래의 lineNum을 사용합니다
-                                      stations: allStations
-                                          .where((s) => s['line_num'] == lineNum)
-                                          .toList(),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          );
-                        },
+                    ),
+                  ),
+                  if (favoriteStations.length < 4)
+                    Container(
+                      width: 75,
+                      height: 68,
+                      margin: EdgeInsets.symmetric(horizontal: 4),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            margin: EdgeInsets.only(left: 8.0),
+                            child: _buildAddFavoriteButton(),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
+                ],
+              ),
+            ),
+          ),
+
+          // 최근기록 섹션
+          Padding(
+            padding: const EdgeInsets.only(left: 15.0, top: 15.0, bottom: 5.0),
+            child: Text(
+              '최근기록',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
+              ),
+            ),
+          ),
+          Container(
+            margin: EdgeInsets.symmetric(vertical: 0, horizontal: 12.0),
+            height: 400, // 화면 높이의 50%로 고정
+            decoration: BoxDecoration(
+              color: Theme.of(context).brightness == Brightness.dark ? Colors.grey[800] : Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: Theme.of(context).brightness == Brightness.dark ? Colors.grey[600]! : Colors.grey[300]!,
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.5),
+                  spreadRadius: 1,
+                  blurRadius: 4,
+                  offset: Offset(7, 8),
+                ),
+              ],
+            ),
+            child: ListView.builder(
+              // shrinkWrap과 NeverScrollableScrollPhysics 제거
+              padding: const EdgeInsets.only(top: 15.0),
+              itemCount: searchHistory.length,
+              itemBuilder: (context, index) {
+                final item = searchHistory[index];
+                final Color lineColor = _getLineColor(item['lineNum']);
+                final displayLineNum = item['lineNum'].replaceFirst(RegExp(r'^0'), '');
+
+                return Container(
+                  margin: EdgeInsets.symmetric(vertical: 4.0, horizontal: 12.0),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).brightness == Brightness.dark ? Colors.grey[800] : Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: Theme.of(context).brightness == Brightness.dark ? Colors.grey[600]! : Colors.grey[300]!,
+                      width: 1,
+                    ),
+                  ),
+                  child: ListTile(
+                    contentPadding: EdgeInsets.symmetric(horizontal: 16.0),
+                    title: Text(
+                      item['stationName'],
+                      style: TextStyle(
+                        color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
+                        fontSize: 16.0,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    trailing: Container(
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: lineColor,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        displayLineNum,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    onTap: () {
+                      final stationName = item['stationName'];
+                      final lineNum = item['lineNum'];
+                      addSearchHistory(stationName, lineNum);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => StationInfoScreen(
+                            stationName: stationName,
+                            lineNum: lineNum,
+                            stations: allStations
+                                .where((s) => s['line_num'] == lineNum)
+                                .toList(),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                 );
               },
             ),
-          )
+          ),
+          Container(
+            child: AdManager().getBannerAdWidget() ?? Container(),
+          ),
         ],
       ),
     );
