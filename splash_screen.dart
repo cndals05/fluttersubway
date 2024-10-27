@@ -4,6 +4,8 @@ import 'dart:async'; // Import Timer for delay
 import 'home_screen.dart'; // Import HomeScreen
 
 class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
   @override
   _SplashScreenState createState() => _SplashScreenState();
 }
@@ -13,7 +15,7 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
     // Navigate to HomeScreen after 2 seconds
-    Timer(Duration(seconds: 2), () {
+    Timer(const Duration(seconds: 2), () {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => HomeScreen()),
       );
@@ -28,13 +30,13 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               Icons.train,
               size: 200,
               color: Colors.blue,
             ),
-            SizedBox(height: 20), // Space between icon and progress bar
-            Container(
+            const SizedBox(height: 20), // Space between icon and progress bar
+            SizedBox(
               width: 150,  // Diameter of the circular progress indicator
               height: 150,
               child: Stack(
@@ -42,10 +44,10 @@ class _SplashScreenState extends State<SplashScreen> {
                 children: [
                   CircularProgressIndicator(
                     strokeWidth: 8.0, // Thickness of the progress bar
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
                     backgroundColor: Colors.grey[300],
                   ),
-                  Positioned(
+                  const Positioned(
                     child: Text(
                       'Loading',
                       style: TextStyle(
