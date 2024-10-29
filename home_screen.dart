@@ -42,17 +42,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _isDarkMode = widget.isDarkMode;
     _isSystemMode = false;
     _loadPreferences();
-    _setupBannerAd();
+    /* 광고 AdManager().getBannerAdWidget() ?? Container(),  AdManager _setupBannerAd();*/
   }
-
-  void _setupBannerAd() {
+ /* void _setupBannerAd() {
     _bannerAd = AdManager().createBannerAd();
     _bannerAd?.load().then((value) {
       setState(() {
         _isAdLoaded = true;
       });
     });
-  }
+  }*/
 
   @override
   void dispose() {
@@ -918,9 +917,9 @@ class _CombinedScreenState extends State<CombinedScreen> {
               },
             ),
           ),
-          Container(
+         /* Container(
             child: AdManager().getBannerAdWidget() ?? Container(),
-          ),
+          ),*/
         ],
       ),
     );
@@ -993,17 +992,54 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
           List<Map<String, dynamic>> newArrivalInfo = [];
           List<dynamic> arrivals = data['realtimeArrivalList'];
 
+          // 현재 선택된 호선의 도착 정보만 필터링
+          final currentSubwayId = _getSubwayId(currentLine);
+          print('Current Line: $currentLine');
+          print('Current SubwayId: $currentSubwayId');
+
+          arrivals = arrivals.where((arrival) {
+            String subwayId = arrival['subwayId'] ?? '';
+            print('Arrival SubwayId: $subwayId');
+            // currentLine과 subwayId가 일치하는 정보만 선택
+            return subwayId == currentSubwayId;
+          }).toList();
+
+          print('Filtered Arrivals Count: ${arrivals.length}');
+
+          DateTime now = DateTime.now();
+
           for (var arrival in arrivals) {
+            String recptnDt = arrival['recptnDt'] ?? '';
+            String timeUntilArrival = '정보 없음';
+
+            if (recptnDt.isNotEmpty) {
+              try {
+                DateTime arrivalTime = DateTime.parse(recptnDt);
+                Duration difference = arrivalTime.difference(now);
+                int minutes = difference.inMinutes.abs();
+
+                if (minutes == 0) {
+                  timeUntilArrival = '곧 도착';
+                } else {
+                  timeUntilArrival = '$minutes분 후 도착';
+                }
+              } catch (e) {
+                print('Error parsing date: $e');
+                timeUntilArrival = '시간 정보 오류';
+              }
+            }
+
             newArrivalInfo.add({
               'trainLineNm': arrival['trainLineNm'] ?? '',
               'btrainNo': arrival['btrainNo'] ?? '',
-              'barvlDt': arrival['barvlDt'] ?? '',
+              'barvlDt': timeUntilArrival,
             });
           }
 
           if (mounted) {
             setState(() {
               arrivalInfo = newArrivalInfo;
+              print('Updated arrival info count: ${arrivalInfo.length}');
             });
           }
         }
@@ -1017,7 +1053,6 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
       }
     }
   }
-
 
   Future<void> _loadInitialData() async {
     setState(() {
@@ -1532,7 +1567,7 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
               ),
             ),
           ),
-          /*Container(
+          Container(
             margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -1590,7 +1625,7 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
                                 ),
                               ),
                               Text(
-                                '도착까지: ${info['barvlDt']}초',
+                                '${info['barvlDt']}', // '초' 제거, 메시지 그대로 표시
                                 style: TextStyle(
                                   color: Colors.blue,
                                   fontWeight: FontWeight.bold,
@@ -1604,7 +1639,7 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
                   )).toList(),
               ],
             ),
-          ),*/
+          ),
           Card(
             margin: EdgeInsets.all(16),
             elevation: 4,
@@ -1702,8 +1737,8 @@ class _StationInfoScreenState extends State<StationInfoScreen> {
               ),
             ),
           ),
-          AdManager().getBannerAdWidget() ?? Container(),
-          SizedBox(height: 16),
+         /* AdManager().getBannerAdWidget() ?? Container(),
+          SizedBox(height: 16),*/
         ],
       ),
     );
